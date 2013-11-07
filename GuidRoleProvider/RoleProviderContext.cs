@@ -21,14 +21,17 @@ namespace GuidRoleProvider
             sqlConn.ConnectionString = ConfigurationManager.ConnectionStrings["RoleProviderContext"].ConnectionString;
             sqlConn.Open();
 
+            // User table
             userAdapter = new SqlDataAdapter("select * from Users", sqlConn);
             userAdapter.FillSchema(db, SchemaType.Source, "Users");
             userAdapter.Fill(db, "Users");
 
+            // Role table
             roleAdapter = new SqlDataAdapter("select * from Roles", sqlConn);
             roleAdapter.FillSchema(db, SchemaType.Source, "Roles");
             roleAdapter.Fill(db, "Roles");
 
+            // UserRole join table
             userRoleAdapter = new SqlDataAdapter("select * from UserRoles", sqlConn);
             userRoleAdapter.FillSchema(db, SchemaType.Source, "UserRoles");
             userRoleAdapter.Fill(db, "UserRoles");
@@ -36,6 +39,7 @@ namespace GuidRoleProvider
             db.Relations.Add("UserKey", db.Tables["Users"].Columns["UserId"], db.Tables["UserRoles"].Columns["UserId"]);
             db.Relations.Add("RoleKey", db.Tables["Roles"].Columns["RoleId"], db.Tables["UserRoles"].Columns["RoleId"]);
 
+            // Read only join of User and Role tables based on UserRole table.
             using(SqlDataAdapter junctionAdapter = new SqlDataAdapter("select u.*, r.* from UserRoles ur join Users u on ur.UserId = u.UserId join Roles r on ur.RoleId = r.RoleId", sqlConn))
             {
                 junctionAdapter.FillSchema(db, SchemaType.Source, "Junction");
