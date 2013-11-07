@@ -38,10 +38,12 @@ namespace GuidRoleProvider
                         {
                             foreach (string roleName in roleNames)
                             {
+                                // Don't apply duplicates
                                 if (role["RoleName"].ToString().Equals(roleName, StringComparison.OrdinalIgnoreCase)
-                                    && user.Roles.Any(x => x.RoleName.Equals(roleName, StringComparison.OrdinalIgnoreCase)))
+                                    && !context.db.Tables["Junction"].AsEnumerable().Where(x => x.Field<Guid>("UserId").Equals((Guid)user["UserId"]))
+                                    .Any(x => x.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase)))
                                 {
-                                    user.Roles.Add(role);
+                                    context.db.Tables["UserRoles"].Rows.Add(user["UserId"], role["RoleId"]);
                                 }
                             }
                         }
@@ -59,10 +61,10 @@ namespace GuidRoleProvider
         {
             using (var context = new RoleProviderContext())
             {
-                if (!context.context.Tables["Roles"].AsEnumerable().Any(x => x.Field<string>("RoleName")
+                if (!context.db.Tables["Roles"].AsEnumerable().Any(x => x.Field<string>("RoleName")
                     .Equals(roleName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    context.context.Tables["Roles"].Rows.Add(null, roleName); // null is for identity column
+                    context.db.Tables["Roles"].Rows.Add(null, roleName); // null is for identity column
                     context.SaveChanges();
                 }
             }
@@ -76,7 +78,7 @@ namespace GuidRoleProvider
             {
                 try
                 {
-                    DataRow role = context.context.Tables["Roles"].AsEnumerable().SingleOrDefault(x => x.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase));
+                    DataRow role = context.db.Tables["Roles"].AsEnumerable().SingleOrDefault(x => x.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase));
                     if (role != null)
                     {
                         role.Delete();

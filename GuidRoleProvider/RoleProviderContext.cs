@@ -14,7 +14,7 @@ namespace GuidRoleProvider
         public DataSet db = new DataSet("RoleProvider");
         private SqlDataAdapter userAdapter;
         private SqlDataAdapter roleAdapter;
-        private SqlDataAdapter junctionAdapter;
+        private SqlDataAdapter userRoleAdapter;
 
         public RoleProviderContext()
         {
@@ -29,9 +29,21 @@ namespace GuidRoleProvider
             roleAdapter.FillSchema(db, SchemaType.Source, "Roles");
             roleAdapter.Fill(db, "Roles");
 
-            junctionAdapter = new SqlDataAdapter("select * from UserRoles", sqlConn);
-            junctionAdapter.FillSchema(db, SchemaType.Source, "UserRoles");
-            junctionAdapter.Fill(db, "UserRoles");
+            userRoleAdapter = new SqlDataAdapter("select * from UserRoles", sqlConn);
+            userRoleAdapter.FillSchema(db, SchemaType.Source, "UserRoles");
+            userRoleAdapter.Fill(db, "UserRoles");
+
+            db.Relations.Add("UserKey", db.Tables["Users"].Columns["UserId"], db.Tables["UserRoles"].Columns["UserId"]);
+            db.Relations.Add("RoleKey", db.Tables["Roles"].Columns["RoleId"], db.Tables["UserRoles"].Columns["RoleId"]);
+
+            using(SqlDataAdapter junctionAdapter = new SqlDataAdapter("select u.*, r.* from UserRoles ur join Users u on ur.UserId = u.UserId join Roles r on ur.RoleId = r.RoleId", sqlConn))
+            {
+                junctionAdapter.FillSchema(db, SchemaType.Source, "Junction");
+                junctionAdapter.Fill(db, "Junction");
+            }
+
+            db.Relations.Add("UserJunction", db.Tables["Users"].Columns["UserId"], db.Tables["Junction"].Columns["UserId"]);
+            db.Relations.Add("RoleJunction", db.Tables["Roles"].Columns["RoleId"], db.Tables["Junction"].Columns["RoleId"]);
         }
 
         public void SaveChanges()
@@ -42,8 +54,8 @@ namespace GuidRoleProvider
             roleAdapter.UpdateCommand = new SqlCommandBuilder(roleAdapter).GetUpdateCommand();
             roleAdapter.Update(db, "Roles");
 
-            junctionAdapter.UpdateCommand = new SqlCommandBuilder(junctionAdapter).GetUpdateCommand();
-            junctionAdapter.Update(db, "UserRoles");
+            userRoleAdapter.UpdateCommand = new SqlCommandBuilder(userRoleAdapter).GetUpdateCommand();
+            userRoleAdapter.Update(db, "UserRoles");
         }
 
         public void Dispose()
@@ -51,7 +63,7 @@ namespace GuidRoleProvider
             db.Dispose();
             roleAdapter.Dispose();
             userAdapter.Dispose();
-            junctionAdapter.Dispose();
+            userRoleAdapter.Dispose();
             sqlConn.Dispose();
         }
     }
