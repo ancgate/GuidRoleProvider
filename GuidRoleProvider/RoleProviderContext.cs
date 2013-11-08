@@ -8,7 +8,16 @@ using System.Configuration;
 
 namespace GuidRoleProvider
 {
-    /* Required Table Schema (Column order and contraint names don't matter)
+    /* Declare connection string with name "RoleProviderContext" and role provider as 
+
+    <roleManager enabled="true" cacheRolesInCookie="false" defaultProvider="GuidRoleProvider">
+        <providers>
+            <clear />
+            <add name="GRoleProvider" type="GuidRoleProvider.GRoleProvider, GuidRoleProvider" connectionStringName="RoleProviderContext" />
+        </providers>
+    </roleManager>
+
+    Required Table Schema (Column order and contraint names don't matter)
     
     CREATE TABLE [dbo].[Users]  ( 
         [UserGuid] 	uniqueidentifier NOT NULL,
