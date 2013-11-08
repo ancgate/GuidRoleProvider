@@ -100,33 +100,28 @@ namespace GuidRoleProvider
             return ret;
         }
 
-        ///// <summary>
-        ///// WTH is the point of this method? Maybe I'm not understanding it correctly
-        ///// </summary>
-        ///// <param name="roleName"></param>
-        ///// <param name="usernameToMatch"></param>
-        ///// <returns></returns>
-        //public override string[] FindUsersInRole(string roleName, string usernameToMatch)
-        //{
-        //    List<string> users = new List<string>();
+        /// <summary>
+        /// WTH is the point of this method? Maybe I'm not understanding it correctly
+        /// </summary>
+        /// <param name="roleName"></param>
+        /// <param name="usernameToMatch"></param>
+        /// <returns></returns>
+        public override string[] FindUsersInRole(string roleName, string usernameToMatch)
+        {
+            List<string> users = new List<string>();
 
-        //    using (var context = new RoleProviderContext())
-        //    {
-        //        Role role = context.Roles.SingleOrDefault(x => x.RoleName.Equals(roleName, StringComparison.OrdinalIgnoreCase));
+            using (var context = new RoleProviderContext())
+            {
+                var matches = context.db.Tables["Junction"].AsEnumerable().Where(x => x.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase))
+                    .Where(y => y.Field<string>("UserName").Equals(usernameToMatch, StringComparison.OrdinalIgnoreCase));
 
-        //        if (role != null)
-        //        {
-        //            foreach (var user in role.Users)
-        //            {
-        //                if (user.UserName.Equals(usernameToMatch, StringComparison.OrdinalIgnoreCase))
-        //                {
-        //                    users.Add(user.UserName);
-        //                }
-        //            }
-        //        }
-        //    }
-        //    return users.ToArray();
-        //}
+                foreach (var row in matches)
+                {
+                    users.Add(row["UserName"].ToString());
+                }
+            }
+            return users.ToArray();
+        }
 
         public override string[] GetAllRoles()
         {
@@ -245,11 +240,6 @@ namespace GuidRoleProvider
             }
 
             return isValid;
-        }
-
-        public override string[] FindUsersInRole(string roleName, string usernameToMatch)
-        {
-            throw new NotImplementedException();
         }
     }
 }
