@@ -193,34 +193,34 @@ namespace GuidRoleProvider
             return isValid;
         }
 
-        //public override void RemoveUsersFromRoles(string[] usernames, string[] roleNames)
-        //{
-        //    using (var context = new RoleProviderContext())
-        //    {
-        //        foreach (string username in usernames)
-        //        {
-        //            User user = context.Users.SingleOrDefault(x => x.UserName.Equals(username, StringComparison.OrdinalIgnoreCase));
+        public override void RemoveUsersFromRoles(string[] usernames, string[] roleNames)
+        {
+            using (var context = new RoleProviderContext())
+            {
+                foreach (string username in usernames)
+                {
+                    DataRow user = context.db.Tables["Users"].AsEnumerable().SingleOrDefault(x => x.Field<string>("UserName").Equals(username, StringComparison.OrdinalIgnoreCase));
 
-        //            if (user != null)
-        //            {
-        //                var AllDbRoles = context.Roles.ToList();
+                    if (user != null)
+                    {
+                        var AllDbRoles = context.db.Tables["Roles"].AsEnumerable();
 
-        //                foreach (var role in AllDbRoles)
-        //                {
-        //                    foreach (string roleName in roleNames)
-        //                    {
-        //                        if (role.RoleName.Equals(roleName, StringComparison.OrdinalIgnoreCase)
-        //                        && role.Users.Any(x => x.UserName.Equals(username, StringComparison.OrdinalIgnoreCase)))
-        //                        {
-        //                            role.Users.Remove(user);
-        //                        }
-        //                    }
-        //                }
-        //            }
-        //        }
-        //        context.SaveChanges();
-        //    }
-        //}
+                        foreach (var role in AllDbRoles)
+                        {
+                            foreach (string roleName in roleNames)
+                            {
+                                if (role.RoleName.Equals(roleName, StringComparison.OrdinalIgnoreCase)
+                                && role.Users.Any(x => x.UserName.Equals(username, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    role.Users.Remove(user);
+                                }
+                            }
+                        }
+                    }
+                }
+                context.SaveChanges();
+            }
+        }
 
         public override bool RoleExists(string roleName)
         {

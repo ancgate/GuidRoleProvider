@@ -8,6 +8,44 @@ using System.Configuration;
 
 namespace GuidRoleProvider
 {
+    /* Required Table Schema
+    
+    CREATE TABLE [dbo].[Users]  ( 
+        [UserGuid] 	uniqueidentifier NOT NULL,
+        [LastName] 	varchar(25) NULL,
+        [UserName] 	varchar(50) NULL,
+        [Email]    	varchar(50) NULL,
+        [Phone]    	varchar(25) NULL,
+        [FirstName]	varchar(25) NULL,
+        [UserId]   	int IDENTITY(1,1) NOT NULL,
+        CONSTRAINT [UserPKey] PRIMARY KEY CLUSTERED([UserId])
+    )
+
+    CREATE TABLE [dbo].[Roles]  ( 
+        [RoleId]  	int IDENTITY(1,1) NOT NULL,
+        [RoleName]	varchar(50) NOT NULL,
+        CONSTRAINT [PKeyRole] PRIMARY KEY CLUSTERED([RoleId])
+    )
+
+    CREATE TABLE [dbo].[UserRoles]  ( 
+        [RoleId]	int NOT NULL,
+        [UserId]	int NOT NULL,
+        CONSTRAINT [UserRoleKey] PRIMARY KEY CLUSTERED([RoleId],[UserId])
+    )
+    ALTER TABLE [dbo].[UserRoles]
+        ADD CONSTRAINT [UserFKey]
+        FOREIGN KEY([UserId])
+        REFERENCES [dbo].[Users]([UserId])
+        ON DELETE NO ACTION 
+        ON UPDATE NO ACTION 
+    ALTER TABLE [dbo].[UserRoles]
+        ADD CONSTRAINT [RoleFKey]
+        FOREIGN KEY([RoleId])
+        REFERENCES [dbo].[Roles]([RoleId])
+        ON DELETE NO ACTION 
+        ON UPDATE NO ACTION 
+     
+     */
     internal sealed class RoleProviderContext : IDisposable
     {
         private SqlConnection sqlConn = new SqlConnection();
