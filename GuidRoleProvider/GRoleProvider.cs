@@ -42,7 +42,10 @@ namespace GuidRoleProvider
                                 if (role["RoleName"].ToString().Equals(roleName, StringComparison.OrdinalIgnoreCase)
                                     && !user.GetChildRows("UserJunction").Any(x => x.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase)))
                                 {
-                                    context.db.Tables["UserRoles"].Rows.Add(user["UserId"], role["RoleId"]);
+                                    DataRow newRow = context.db.Tables["UserRoles"].NewRow();
+                                    newRow["UserId"] = user["UserId"];
+                                    newRow["RoleId"] = role["RoleId"];
+                                    context.db.Tables["UserRoles"].Rows.Add(newRow);
                                 }
                             }
                         }
@@ -63,7 +66,10 @@ namespace GuidRoleProvider
                 if (!context.db.Tables["Roles"].AsEnumerable().Any(x => x.Field<string>("RoleName")
                     .Equals(roleName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    context.db.Tables["Roles"].Rows.Add(null, roleName); // null is for identity column
+                    DataRow newRow = context.db.Tables["Roles"].NewRow();
+                    newRow["RoleId"] = null; // null is for identity column (will be auto assigned)
+                    newRow["RoleName"] = roleName;
+                    context.db.Tables["Roles"].Rows.Add(newRow);
                     context.SaveChanges();
                 }
             }
@@ -205,14 +211,18 @@ namespace GuidRoleProvider
                     {
                         var AllDbRoles = context.db.Tables["Roles"].AsEnumerable();
 
-                        foreach (var role in AllDbRoles)
+                        foreach (DataRow role in AllDbRoles)
                         {
                             foreach (string roleName in roleNames)
                             {
-                                if (role.RoleName.Equals(roleName, StringComparison.OrdinalIgnoreCase)
-                                && role.Users.Any(x => x.UserName.Equals(username, StringComparison.OrdinalIgnoreCase)))
+                                if (role.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    role.Users.Remove(user);
+                                    var removeRow = user.GetChildRows("UserKey").SingleOrDefault(x => x.Field<int>("RoleId") == role.Field<int>("RoleId"));
+
+                                    if (removeRow != null)
+                                    {
+                                        removeRow.Delete();
+                                    }
                                 }
                             }
                         }
@@ -238,11 +248,6 @@ namespace GuidRoleProvider
         }
 
         public override string[] FindUsersInRole(string roleName, string usernameToMatch)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void RemoveUsersFromRoles(string[] usernames, string[] roleNames)
         {
             throw new NotImplementedException();
         }

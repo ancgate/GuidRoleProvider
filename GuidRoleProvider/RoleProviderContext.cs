@@ -8,7 +8,7 @@ using System.Configuration;
 
 namespace GuidRoleProvider
 {
-    /* Required Table Schema
+    /* Required Table Schema (Column order and contraint names don't matter)
     
     CREATE TABLE [dbo].[Users]  ( 
         [UserGuid] 	uniqueidentifier NOT NULL,
