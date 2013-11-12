@@ -286,7 +286,7 @@ namespace GuidRoleProvider
             // Check with AD for updated username
             using (ActiveDirectoryComm adConn = new ActiveDirectoryComm())
             {
-                UserCollection adUsers = adConn.GetAllUsers();
+                UserCollection adUsers = adConn.GetAllUsersSimple();
                 var user = (ActiveDirectoryCommunicator.User)adUsers.SingleOrDefault(x => ("hai-mke\\" + x.LoginName).Equals(username, StringComparison.OrdinalIgnoreCase));
 
                 if (user != null)
