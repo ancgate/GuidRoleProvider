@@ -296,6 +296,10 @@ namespace GuidRoleProvider
                     if (row != null)
                     {
                         row["UserName"] = username;
+                        row["FirstName"] = user.Name.Substring(0, user.Name.IndexOf(' '));
+                        row["LastName"] = user.Name.Substring(user.Name.IndexOf(' ') + 1);
+                        row["Email"] = user.Email;
+                        row["Phone"] = user.Phone;
                     }
                     else // Add new user
                     {
