@@ -264,26 +264,6 @@ namespace GuidRoleProvider
         }
 
         /// <summary>
-        /// Will not create duplicates
-        /// </summary>
-        /// <param name="roleName"></param>
-        public override void CreateUserFromAD(string username)
-        {
-            using (var context = new RoleProviderContext())
-            {
-                if (!context.db.Tables["Roles"].AsEnumerable().Any(x => x.Field<string>("RoleName")
-                    .Equals(roleName, StringComparison.OrdinalIgnoreCase)))
-                {
-                    DataRow newRow = context.db.Tables["Roles"].NewRow();
-                    newRow["RoleId"] = null; // null is for identity column (will be auto assigned)
-                    newRow["RoleName"] = roleName;
-                    context.db.Tables["Roles"].Rows.Add(newRow);
-                    context.SaveChanges();
-                }
-            }
-        }
-
-        /// <summary>
         /// Retrieves user's role even if username has changed (performs GUID lookup)
         /// </summary>
         /// <param name="username">Username to resolve (current username)</param>
