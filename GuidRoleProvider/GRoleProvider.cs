@@ -293,11 +293,24 @@ namespace GuidRoleProvider
                 {
                     var row = context.db.Tables["Users"].AsEnumerable().SingleOrDefault(x => x.Field<Guid>("UserGuid").Equals(user.Guid.Value));
 
+                    int nameSep = user.Name.IndexOf(' ');
+                    string firstName, lastName;
+                    if (nameSep > 0)
+                    {
+                        firstName = user.Name.Substring(0, nameSep);
+                        lastName = user.Name.Substring(nameSep + 1);
+                    }
+                    else
+                    {
+                        firstName = user.Name;
+                        lastName = string.Empty;
+                    }
+
                     if (row != null)
                     {
                         row["UserName"] = username;
-                        row["FirstName"] = user.Name.Substring(0, user.Name.IndexOf(' '));
-                        row["LastName"] = user.Name.Substring(user.Name.IndexOf(' ') + 1);
+                        row["FirstName"] = firstName;
+                        row["LastName"] = lastName;
                         row["Email"] = user.Email;
                         row["Phone"] = user.Phone;
                     }
@@ -305,8 +318,8 @@ namespace GuidRoleProvider
                     {
                         DataRow newRow = context.db.Tables["Users"].NewRow();
                         newRow["UserGuid"] = user.Guid.Value;
-                        newRow["FirstName"] = user.Name.Substring(0, user.Name.IndexOf(' '));
-                        newRow["LastName"] = user.Name.Substring(user.Name.IndexOf(' ') + 1);
+                        newRow["FirstName"] = firstName;
+                        newRow["LastName"] = lastName;
                         newRow["UserName"] = username;
                         newRow["Email"] = user.Email;
                         newRow["Phone"] = user.Phone;
