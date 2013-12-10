@@ -175,6 +175,8 @@ namespace GuidRoleProvider
                 }
                 userRoleAdapter.UpdateCommand = new SqlCommandBuilder(userRoleAdapter).GetUpdateCommand();
                 userRoleAdapter.Update(changes, userRoleTable);
+
+                db.AcceptChanges(); // Don't double apply if savechanges is called again
             }
         }
 
