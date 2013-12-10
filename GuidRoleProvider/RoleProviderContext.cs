@@ -145,27 +145,36 @@ namespace GuidRoleProvider
             {
                 foreach (DataRow row in changes.Tables[userTable].Rows)
                 {
-                    row[updateDtCol] = DateTime.Now;
-                    row[updateByCol] = HttpContext.Current.User.Identity.Name;
+                    if (row.RowState == DataRowState.Added || row.RowState == DataRowState.Modified)
+                    {
+                        row[updateDtCol] = DateTime.Now;
+                        row[updateByCol] = HttpContext.Current.User.Identity.Name;
+                    }
                 }
                 userAdapter.UpdateCommand = new SqlCommandBuilder(userAdapter).GetUpdateCommand();
-                userAdapter.Update(db, userTable);
+                userAdapter.Update(changes, userTable);
 
                 foreach (DataRow row in changes.Tables[roleTable].Rows)
                 {
-                    row[updateDtCol] = DateTime.Now;
-                    row[updateByCol] = HttpContext.Current.User.Identity.Name;
+                    if (row.RowState == DataRowState.Added || row.RowState == DataRowState.Modified)
+                    {
+                        row[updateDtCol] = DateTime.Now;
+                        row[updateByCol] = HttpContext.Current.User.Identity.Name;
+                    }
                 }
                 roleAdapter.UpdateCommand = new SqlCommandBuilder(roleAdapter).GetUpdateCommand();
-                roleAdapter.Update(db, roleTable);
+                roleAdapter.Update(changes, roleTable);
 
                 foreach (DataRow row in changes.Tables[userRoleTable].Rows)
                 {
-                    row[updateDtCol] = DateTime.Now;
-                    row[updateByCol] = HttpContext.Current.User.Identity.Name;
+                    if (row.RowState == DataRowState.Added || row.RowState == DataRowState.Modified)
+                    {
+                        row[updateDtCol] = DateTime.Now;
+                        row[updateByCol] = HttpContext.Current.User.Identity.Name;
+                    }
                 }
                 userRoleAdapter.UpdateCommand = new SqlCommandBuilder(userRoleAdapter).GetUpdateCommand();
-                userRoleAdapter.Update(db, userRoleTable);
+                userRoleAdapter.Update(changes, userRoleTable);
             }
         }
 
