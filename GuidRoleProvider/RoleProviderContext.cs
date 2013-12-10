@@ -47,8 +47,6 @@ namespace GuidRoleProvider
     CREATE TABLE [dbo].[user_roles]  ( 
         [role_id]	int NOT NULL,
         [user_id]	int NOT NULL,
-        [insert_dt]     datetime NOT NULL,
-        [insert_by]     varchar(25) NOT NULL,
         [update_dt]     datetime NOT NULL,
         [update_by]     varchar(25) NOT NULL,
         CONSTRAINT [UserRoleKey] PRIMARY KEY CLUSTERED([role_id],[user_id])
