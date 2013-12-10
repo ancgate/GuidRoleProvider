@@ -1,5 +1,4 @@
 ﻿using ActiveDirectoryCommunicator;
-using GuidRoleProvider.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -20,7 +19,7 @@ namespace GuidRoleProvider
         public override string ApplicationName { get; set; }
 
         /// <summary>
-        /// If user or role is not found, it is ignored
+        /// If role is not found, it is ignored
         /// </summary>
         /// <param name="usernames"></param>
         /// <param name="roleNames"></param>
@@ -31,25 +30,25 @@ namespace GuidRoleProvider
                 foreach (string username in usernames)
                 {
                     DataRow user = ResolveUserRow(username, context,
-                        (c) => { return c.db.Tables["Users"].AsEnumerable().SingleOrDefault(x => x.Field<string>("UserName").Equals(username, StringComparison.OrdinalIgnoreCase)); }
+                        (c) => { return c.db.Tables[context.userTable].AsEnumerable().SingleOrDefault(x => x.Field<string>(context.userNameCol).Equals(username, StringComparison.OrdinalIgnoreCase)); }
                         );
 
                     if (user != null)
                     {
-                        var AllDbRoles = context.db.Tables["Roles"].AsEnumerable().ToList();
+                        var AllDbRoles = context.db.Tables[context.roleTable].AsEnumerable().ToList();
 
                         foreach (var role in AllDbRoles)
                         {
                             foreach (string roleName in roleNames)
                             {
                                 // Don't apply duplicates
-                                if (role["RoleName"].ToString().Equals(roleName, StringComparison.OrdinalIgnoreCase)
-                                    && !user.GetChildRows("UserJunction").Any(x => x.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase)))
+                                if (role[context.roleNameCol].ToString().Equals(roleName, StringComparison.OrdinalIgnoreCase)
+                                    && !user.GetChildRows(context.userJuncRelation).Any(x => x.Field<string>(context.roleNameCol).Equals(roleName, StringComparison.OrdinalIgnoreCase)))
                                 {
-                                    DataRow newRow = context.db.Tables["UserRoles"].NewRow();
-                                    newRow["UserId"] = user["UserId"];
-                                    newRow["RoleId"] = role["RoleId"];
-                                    context.db.Tables["UserRoles"].Rows.Add(newRow);
+                                    DataRow newRow = context.db.Tables[context.userRoleTable].NewRow();
+                                    newRow[context.userIdCol] = user[context.userIdCol];
+                                    newRow[context.roleIdCol] = role[context.roleIdCol];
+                                    context.db.Tables[context.userRoleTable].Rows.Add(newRow);
                                 }
                             }
                         }
@@ -67,13 +66,13 @@ namespace GuidRoleProvider
         {
             using (var context = new RoleProviderContext())
             {
-                if (!context.db.Tables["Roles"].AsEnumerable().Any(x => x.Field<string>("RoleName")
+                if (!context.db.Tables[context.roleTable].AsEnumerable().Any(x => x.Field<string>(context.roleNameCol)
                     .Equals(roleName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    DataRow newRow = context.db.Tables["Roles"].NewRow();
-                    newRow["RoleId"] = null; // null is for identity column (will be auto assigned)
-                    newRow["RoleName"] = roleName;
-                    context.db.Tables["Roles"].Rows.Add(newRow);
+                    DataRow newRow = context.db.Tables[context.roleTable].NewRow();
+                    newRow[context.roleIdCol] = null; // null is for identity column (will be auto assigned)
+                    newRow[context.roleNameCol] = roleName;
+                    context.db.Tables[context.roleTable].Rows.Add(newRow);
                     context.SaveChanges();
                 }
             }
@@ -87,7 +86,7 @@ namespace GuidRoleProvider
             {
                 try
                 {
-                    DataRow role = context.db.Tables["Roles"].AsEnumerable().SingleOrDefault(x => x.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase));
+                    DataRow role = context.db.Tables[context.roleTable].AsEnumerable().SingleOrDefault(x => x.Field<string>(context.roleNameCol).Equals(roleName, StringComparison.OrdinalIgnoreCase));
                     if (role != null)
                     {
                         role.Delete();
@@ -119,14 +118,14 @@ namespace GuidRoleProvider
                 var matches = ResolveUserRow(usernameToMatch, context,
                         (c) =>
                         {
-                            return c.db.Tables["Junction"].AsEnumerable().Where(x => x.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase))
-                                .Where(y => y.Field<string>("UserName").Equals(usernameToMatch, StringComparison.OrdinalIgnoreCase));
+                            return c.db.Tables[context.junctionTable].AsEnumerable().Where(x => x.Field<string>(context.roleNameCol).Equals(roleName, StringComparison.OrdinalIgnoreCase))
+                                .Where(y => y.Field<string>(context.userNameCol).Equals(usernameToMatch, StringComparison.OrdinalIgnoreCase));
                         }
                         );
 
                 foreach (var row in matches)
                 {
-                    users.Add(row["UserName"].ToString());
+                    users.Add(row[context.userNameCol].ToString());
                 }
             }
             return users.ToArray();
@@ -138,9 +137,9 @@ namespace GuidRoleProvider
 
             using (var context = new RoleProviderContext())
             {
-                foreach (DataRow row in context.db.Tables["Roles"].Rows)
+                foreach (DataRow row in context.db.Tables[context.roleTable].Rows)
                 {
-                    roles.Add(row["RoleName"].ToString());
+                    roles.Add(row[context.roleNameCol].ToString());
                 }
             }
 
@@ -156,7 +155,7 @@ namespace GuidRoleProvider
                 var user = ResolveUserRow(username, context,
                     (c) =>
                     {
-                        return c.db.Tables["Junction"].AsEnumerable().Where(x => x.Field<string>("UserName").Equals(username, StringComparison.OrdinalIgnoreCase));
+                        return c.db.Tables[context.junctionTable].AsEnumerable().Where(x => x.Field<string>(context.userNameCol).Equals(username, StringComparison.OrdinalIgnoreCase));
                     }
                     );
 
@@ -164,7 +163,7 @@ namespace GuidRoleProvider
                 {
                     foreach (DataRow row in user)
                     {
-                        roles.Add(row["RoleName"].ToString());
+                        roles.Add(row[context.roleNameCol].ToString());
                     }
                 }
             }
@@ -177,13 +176,13 @@ namespace GuidRoleProvider
 
             using (var context = new RoleProviderContext())
             {
-                var role = context.db.Tables["Junction"].AsEnumerable().Where(x => x.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase));
+                var role = context.db.Tables[context.junctionTable].AsEnumerable().Where(x => x.Field<string>(context.roleNameCol).Equals(roleName, StringComparison.OrdinalIgnoreCase));
 
                 if (role != null)
                 {
                     foreach (DataRow row in role)
                     {
-                        users.Add(row["UserName"].ToString());
+                        users.Add(row[context.userNameCol].ToString());
                     }
                 }
             }
@@ -199,8 +198,8 @@ namespace GuidRoleProvider
                 var user = ResolveUserRow(username, context,
                     (c) =>
                     {
-                        return c.db.Tables["Junction"].AsEnumerable().Where(x => x.Field<string>("UserName").Equals(username, StringComparison.OrdinalIgnoreCase))
-                                    .SingleOrDefault(y => y.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase));
+                        return c.db.Tables[context.junctionTable].AsEnumerable().Where(x => x.Field<string>(context.userNameCol).Equals(username, StringComparison.OrdinalIgnoreCase))
+                                    .SingleOrDefault(y => y.Field<string>(context.roleNameCol).Equals(roleName, StringComparison.OrdinalIgnoreCase));
                     }
                     );
 
@@ -220,20 +219,20 @@ namespace GuidRoleProvider
                 foreach (string username in usernames)
                 {
                     DataRow user = ResolveUserRow(username, context,
-                        (c) => { return c.db.Tables["Users"].AsEnumerable().SingleOrDefault(x => x.Field<string>("UserName").Equals(username, StringComparison.OrdinalIgnoreCase)); }
+                        (c) => { return c.db.Tables[context.userTable].AsEnumerable().SingleOrDefault(x => x.Field<string>(context.userNameCol).Equals(username, StringComparison.OrdinalIgnoreCase)); }
                         );
 
                     if (user != null)
                     {
-                        var AllDbRoles = context.db.Tables["Roles"].AsEnumerable();
+                        var AllDbRoles = context.db.Tables[context.roleTable].AsEnumerable();
 
                         foreach (DataRow role in AllDbRoles)
                         {
                             foreach (string roleName in roleNames)
                             {
-                                if (role.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase))
+                                if (role.Field<string>(context.roleNameCol).Equals(roleName, StringComparison.OrdinalIgnoreCase))
                                 {
-                                    var removeRow = user.GetChildRows("UserKey").SingleOrDefault(x => x.Field<int>("RoleId") == role.Field<int>("RoleId"));
+                                    var removeRow = user.GetChildRows(context.userFKeyRelation).SingleOrDefault(x => x.Field<int>(context.roleIdCol) == role.Field<int>(context.roleIdCol));
 
                                     if (removeRow != null)
                                     {
@@ -254,7 +253,7 @@ namespace GuidRoleProvider
 
             using (var context = new RoleProviderContext())
             {
-                if (context.db.Tables["Roles"].AsEnumerable().Any(x => x.Field<string>("RoleName").Equals(roleName, StringComparison.OrdinalIgnoreCase)))
+                if (context.db.Tables[context.roleTable].AsEnumerable().Any(x => x.Field<string>(context.roleNameCol).Equals(roleName, StringComparison.OrdinalIgnoreCase)))
                 {
                     isValid = true;
                 }
@@ -291,7 +290,7 @@ namespace GuidRoleProvider
 
                 if (user != null)
                 {
-                    var row = context.db.Tables["Users"].AsEnumerable().SingleOrDefault(x => x.Field<Guid>("UserGuid").Equals(user.Guid.Value));
+                    var row = context.db.Tables[context.userTable].AsEnumerable().SingleOrDefault(x => x.Field<Guid>(context.userGuidCol).Equals(user.Guid.Value));
 
                     int nameSep = user.Name.IndexOf(' ');
                     string firstName, lastName;
@@ -308,22 +307,20 @@ namespace GuidRoleProvider
 
                     if (row != null)
                     {
-                        row["UserName"] = username;
-                        row["FirstName"] = firstName;
-                        row["LastName"] = lastName;
-                        row["Email"] = user.Email;
-                        row["Phone"] = user.Phone;
+                        row[context.userNameCol] = username;
+                        row[context.userFNameCol] = firstName;
+                        row[context.userLNameCol] = lastName;
+                        row[context.userEmailCol] = user.Email;
                     }
                     else // Add new user
                     {
-                        DataRow newRow = context.db.Tables["Users"].NewRow();
-                        newRow["UserGuid"] = user.Guid.Value;
-                        newRow["FirstName"] = firstName;
-                        newRow["LastName"] = lastName;
-                        newRow["UserName"] = username;
-                        newRow["Email"] = user.Email;
-                        newRow["Phone"] = user.Phone;
-                        context.db.Tables["Users"].Rows.Add(newRow);
+                        DataRow newRow = context.db.Tables[context.userTable].NewRow();
+                        newRow[context.userGuidCol] = user.Guid.Value;
+                        newRow[context.userFNameCol] = firstName;
+                        newRow[context.userLNameCol] = lastName;
+                        newRow[context.userNameCol] = username;
+                        newRow[context.userEmailCol] = user.Email;
+                        context.db.Tables[context.userTable].Rows.Add(newRow);
                     }
                     context.SaveChanges();
 

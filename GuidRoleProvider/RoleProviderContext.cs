@@ -19,38 +19,37 @@ namespace GuidRoleProvider
 
     Required Table Schema (Column order and contraint names don't matter)
     
-    CREATE TABLE [dbo].[Users]  ( 
-        [UserGuid] 	uniqueidentifier NOT NULL,
-        [LastName] 	varchar(25) NULL,
-        [UserName] 	varchar(50) NULL,
-        [Email]    	varchar(50) NULL,
-        [Phone]    	varchar(25) NULL,
-        [FirstName]	varchar(25) NULL,
-        [UserId]   	int IDENTITY(1,1) NOT NULL,
-        CONSTRAINT [UserPKey] PRIMARY KEY CLUSTERED([UserId])
+    CREATE TABLE [dbo].[users]  ( 
+        [ad_user_guid] 	uniqueidentifier NOT NULL,
+        [last_name] 	varchar(25) NULL,
+        [user_name] 	varchar(50) NULL,
+        [email]    	varchar(50) NULL,
+        [first_name]	varchar(25) NULL,
+        [user_id]   	int IDENTITY(1,1) NOT NULL,
+        CONSTRAINT [UserPKey] PRIMARY KEY CLUSTERED([user_id])
     )
 
-    CREATE TABLE [dbo].[Roles]  ( 
-        [RoleId]  	int IDENTITY(1,1) NOT NULL,
-        [RoleName]	varchar(50) NOT NULL,
-        CONSTRAINT [PKeyRole] PRIMARY KEY CLUSTERED([RoleId])
+    CREATE TABLE [dbo].[roles]  ( 
+        [role_id]  	int IDENTITY(1,1) NOT NULL,
+        [role_name]	varchar(50) NOT NULL,
+        CONSTRAINT [PKeyRole] PRIMARY KEY CLUSTERED([role_id])
     )
 
-    CREATE TABLE [dbo].[UserRoles]  ( 
-        [RoleId]	int NOT NULL,
-        [UserId]	int NOT NULL,
-        CONSTRAINT [UserRoleKey] PRIMARY KEY CLUSTERED([RoleId],[UserId])
+    CREATE TABLE [dbo].[user_roles]  ( 
+        [role_id]	int NOT NULL,
+        [user_id]	int NOT NULL,
+        CONSTRAINT [UserRoleKey] PRIMARY KEY CLUSTERED([role_id],[user_id])
     )
-    ALTER TABLE [dbo].[UserRoles]
+    ALTER TABLE [dbo].[user_roles]
         ADD CONSTRAINT [UserFKey]
-        FOREIGN KEY([UserId])
-        REFERENCES [dbo].[Users]([UserId])
+        FOREIGN KEY([user_id])
+        REFERENCES [dbo].[users]([user_id])
         ON DELETE NO ACTION 
         ON UPDATE NO ACTION 
-    ALTER TABLE [dbo].[UserRoles]
+    ALTER TABLE [dbo].[user_roles]
         ADD CONSTRAINT [RoleFKey]
-        FOREIGN KEY([RoleId])
-        REFERENCES [dbo].[Roles]([RoleId])
+        FOREIGN KEY([role_id])
+        REFERENCES [dbo].[roles]([role_id])
         ON DELETE NO ACTION 
         ON UPDATE NO ACTION 
      
@@ -63,50 +62,72 @@ namespace GuidRoleProvider
         private SqlDataAdapter roleAdapter;
         private SqlDataAdapter userRoleAdapter;
 
+        public readonly string userTable = "users";
+        public readonly string userIdCol = "user_id";
+        public readonly string userNameCol = "user_name";
+        public readonly string userGuidCol = "ad_user_guid";
+        public readonly string userFNameCol = "first_name";
+        public readonly string userLNameCol = "last_name";
+        public readonly string userEmailCol = "email";
+
+        public readonly string roleTable = "roles";
+        public readonly string roleIdCol = "role_id";
+        public readonly string roleNameCol = "role_name";
+
+        public readonly string userRoleTable = "user_roles";
+        public readonly string userFKeyRelation = "user_key";
+        public readonly string roleFKeyRelation = "role_key";
+
+        public readonly string junctionTable = "junction";
+        public readonly string userJuncRelation = "user_junction";
+        public readonly string roleJuncRelation = "role_junction";
+
         public RoleProviderContext()
         {
             sqlConn.ConnectionString = ConfigurationManager.ConnectionStrings["RoleProviderContext"].ConnectionString;
             sqlConn.Open();
 
             // User table
-            userAdapter = new SqlDataAdapter("select * from Users", sqlConn);
-            userAdapter.FillSchema(db, SchemaType.Source, "Users");
-            userAdapter.Fill(db, "Users");
+            userAdapter = new SqlDataAdapter(string.Format("select * from {0}", userTable), sqlConn);
+            userAdapter.FillSchema(db, SchemaType.Source, userTable);
+            userAdapter.Fill(db, userTable);
 
             // Role table
-            roleAdapter = new SqlDataAdapter("select * from Roles", sqlConn);
-            roleAdapter.FillSchema(db, SchemaType.Source, "Roles");
-            roleAdapter.Fill(db, "Roles");
+            roleAdapter = new SqlDataAdapter(string.Format("select * from {0}", roleTable), sqlConn);
+            roleAdapter.FillSchema(db, SchemaType.Source, roleTable);
+            roleAdapter.Fill(db, roleTable);
 
             // UserRole join table
-            userRoleAdapter = new SqlDataAdapter("select * from UserRoles", sqlConn);
-            userRoleAdapter.FillSchema(db, SchemaType.Source, "UserRoles");
-            userRoleAdapter.Fill(db, "UserRoles");
+            userRoleAdapter = new SqlDataAdapter(string.Format("select * from {0}", userRoleTable), sqlConn);
+            userRoleAdapter.FillSchema(db, SchemaType.Source, userRoleTable);
+            userRoleAdapter.Fill(db, userRoleTable);
 
-            db.Relations.Add("UserKey", db.Tables["Users"].Columns["UserId"], db.Tables["UserRoles"].Columns["UserId"]);
-            db.Relations.Add("RoleKey", db.Tables["Roles"].Columns["RoleId"], db.Tables["UserRoles"].Columns["RoleId"]);
+            db.Relations.Add(userFKeyRelation, db.Tables[userTable].Columns[userIdCol], db.Tables[userRoleTable].Columns[userIdCol]);
+            db.Relations.Add(roleFKeyRelation, db.Tables[roleTable].Columns[roleIdCol], db.Tables[userRoleTable].Columns[roleIdCol]);
 
             // Read only join of User and Role tables based on UserRole table.
-            using(SqlDataAdapter junctionAdapter = new SqlDataAdapter("select u.*, r.* from UserRoles ur join Users u on ur.UserId = u.UserId join Roles r on ur.RoleId = r.RoleId", sqlConn))
+            using (SqlDataAdapter junctionAdapter = new SqlDataAdapter(
+                string.Format("select u.*, r.* from {0} ur join {1} u on ur.{2} = u.{2} join {3} r on ur.{4} = r.{4}",
+                userRoleTable, userTable, userIdCol, roleTable, roleIdCol), sqlConn))
             {
-                junctionAdapter.FillSchema(db, SchemaType.Source, "Junction");
-                junctionAdapter.Fill(db, "Junction");
+                junctionAdapter.FillSchema(db, SchemaType.Source, junctionTable);
+                junctionAdapter.Fill(db, junctionTable);
             }
 
-            db.Relations.Add("UserJunction", db.Tables["Users"].Columns["UserId"], db.Tables["Junction"].Columns["UserId"]);
-            db.Relations.Add("RoleJunction", db.Tables["Roles"].Columns["RoleId"], db.Tables["Junction"].Columns["RoleId"]);
+            db.Relations.Add(userJuncRelation, db.Tables[userTable].Columns[userIdCol], db.Tables[junctionTable].Columns[userIdCol]);
+            db.Relations.Add(roleJuncRelation, db.Tables[roleTable].Columns[roleIdCol], db.Tables[junctionTable].Columns[roleIdCol]);
         }
 
         public void SaveChanges()
         {
             userAdapter.UpdateCommand = new SqlCommandBuilder(userAdapter).GetUpdateCommand();
-            userAdapter.Update(db, "Users");
+            userAdapter.Update(db, userTable);
 
             roleAdapter.UpdateCommand = new SqlCommandBuilder(roleAdapter).GetUpdateCommand();
-            roleAdapter.Update(db, "Roles");
+            roleAdapter.Update(db, roleTable);
 
             userRoleAdapter.UpdateCommand = new SqlCommandBuilder(userRoleAdapter).GetUpdateCommand();
-            userRoleAdapter.Update(db, "UserRoles");
+            userRoleAdapter.Update(db, userRoleTable);
         }
 
         public void Dispose()
