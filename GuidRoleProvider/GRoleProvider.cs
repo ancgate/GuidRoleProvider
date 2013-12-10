@@ -25,6 +25,8 @@ namespace GuidRoleProvider
         /// <param name="roleNames"></param>
         public override void AddUsersToRoles(string[] usernames, string[] roleNames)
         {
+            usernames = StripDomains(usernames);
+
             using (var context = new RoleProviderContext())
             {
                 foreach (string username in usernames)
@@ -111,6 +113,7 @@ namespace GuidRoleProvider
         /// <returns></returns>
         public override string[] FindUsersInRole(string roleName, string usernameToMatch)
         {
+            usernameToMatch = StripDomain(usernameToMatch);
             List<string> users = new List<string>();
 
             using (var context = new RoleProviderContext())
@@ -148,6 +151,7 @@ namespace GuidRoleProvider
 
         public override string[] GetRolesForUser(string username)
         {
+            username = StripDomain(username);
             List<string> roles = new List<string>();
 
             using (var context = new RoleProviderContext())
@@ -191,6 +195,7 @@ namespace GuidRoleProvider
 
         public override bool IsUserInRole(string username, string roleName)
         {
+            username = StripDomain(username);
             bool isValid = false;
 
             using (var context = new RoleProviderContext())
@@ -214,6 +219,7 @@ namespace GuidRoleProvider
 
         public override void RemoveUsersFromRoles(string[] usernames, string[] roleNames)
         {
+            usernames = StripDomains(usernames);
             using (var context = new RoleProviderContext())
             {
                 foreach (string username in usernames)
@@ -271,7 +277,7 @@ namespace GuidRoleProvider
         /// <returns></returns>
         private T ResolveUserRow<T>(string username, RoleProviderContext context, Func<RoleProviderContext, T> linq)
         {
-            string usernameDomainless = StripDomain(username);
+            username = StripDomain(username);
 
             // First try with current db
             T result = linq(context);
@@ -288,7 +294,7 @@ namespace GuidRoleProvider
             using (ActiveDirectoryComm adConn = new ActiveDirectoryComm())
             {
                 UserCollection adUsers = adConn.GetAllUsersSimple();
-                var user = (ActiveDirectoryCommunicator.User)adUsers.SingleOrDefault(x => x.LoginName.Equals(usernameDomainless, StringComparison.OrdinalIgnoreCase));
+                var user = (ActiveDirectoryCommunicator.User)adUsers.SingleOrDefault(x => x.LoginName.Equals(username, StringComparison.OrdinalIgnoreCase));
 
                 if (user != null)
                 {
@@ -309,7 +315,7 @@ namespace GuidRoleProvider
 
                     if (row != null)
                     {
-                        row[context.userNameCol] = usernameDomainless;
+                        row[context.userNameCol] = username;
                         row[context.userFNameCol] = firstName;
                         row[context.userLNameCol] = lastName;
                         row[context.userEmailCol] = user.Email;
@@ -320,7 +326,7 @@ namespace GuidRoleProvider
                         newRow[context.userGuidCol] = user.Guid.Value;
                         newRow[context.userFNameCol] = firstName;
                         newRow[context.userLNameCol] = lastName;
-                        newRow[context.userNameCol] = usernameDomainless;
+                        newRow[context.userNameCol] = username;
                         newRow[context.userEmailCol] = user.Email;
                         context.db.Tables[context.userTable].Rows.Add(newRow);
                     }
@@ -350,6 +356,16 @@ namespace GuidRoleProvider
             {
                 return username.Substring(domainSep + 1);
             }
+        }
+
+        private string[] StripDomains(string[] usernames)
+        {
+            string[] domainless = new string[usernames.Length];
+            for (int i = 0; i < usernames.Length; i++)
+            {
+                domainless[i] = StripDomain(usernames[i]);
+            }
+            return domainless;
         }
     }
 }
