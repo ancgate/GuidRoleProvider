@@ -7,6 +7,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using System.Web.Security;
 
 namespace GuidRoleProvider
@@ -328,6 +329,8 @@ namespace GuidRoleProvider
                         newRow[context.userLNameCol] = lastName;
                         newRow[context.userNameCol] = username;
                         newRow[context.userEmailCol] = user.Email;
+                        newRow[context.insertByCol] = HttpContext.Current.User.Identity.Name;
+                        newRow[context.insertDtCol] = DateTime.Now;
                         context.db.Tables[context.userTable].Rows.Add(newRow);
                     }
                     context.SaveChanges();

@@ -5,6 +5,7 @@ using System.Text;
 using System.Data.SqlClient;
 using System.Data;
 using System.Configuration;
+using System.Web;
 
 namespace GuidRoleProvider
 {
@@ -23,21 +24,33 @@ namespace GuidRoleProvider
         [ad_user_guid] 	uniqueidentifier NOT NULL,
         [last_name] 	varchar(25) NULL,
         [user_name] 	varchar(50) NULL,
-        [email]    	varchar(50) NULL,
+        [email]    	    varchar(50) NULL,
         [first_name]	varchar(25) NULL,
         [user_id]   	int IDENTITY(1,1) NOT NULL,
+        [insert_dt]     datetime NOT NULL,
+        [insert_by]     varchar(25) NOT NULL,
+        [update_dt]     datetime NOT NULL,
+        [update_by]     varchar(25) NOT NULL,
         CONSTRAINT [UserPKey] PRIMARY KEY CLUSTERED([user_id])
     )
 
     CREATE TABLE [dbo].[roles]  ( 
         [role_id]  	int IDENTITY(1,1) NOT NULL,
         [role_name]	varchar(50) NOT NULL,
+        [insert_dt]     datetime NOT NULL,
+        [insert_by]     varchar(25) NOT NULL,
+        [update_dt]     datetime NOT NULL,
+        [update_by]     varchar(25) NOT NULL,
         CONSTRAINT [PKeyRole] PRIMARY KEY CLUSTERED([role_id])
     )
 
     CREATE TABLE [dbo].[user_roles]  ( 
         [role_id]	int NOT NULL,
         [user_id]	int NOT NULL,
+        [insert_dt]     datetime NOT NULL,
+        [insert_by]     varchar(25) NOT NULL,
+        [update_dt]     datetime NOT NULL,
+        [update_by]     varchar(25) NOT NULL,
         CONSTRAINT [UserRoleKey] PRIMARY KEY CLUSTERED([role_id],[user_id])
     )
     ALTER TABLE [dbo].[user_roles]
@@ -82,6 +95,11 @@ namespace GuidRoleProvider
         public readonly string userJuncRelation = "user_junction";
         public readonly string roleJuncRelation = "role_junction";
 
+        public readonly string insertDtCol = "insert_dt";
+        public readonly string insertByCol = "insert_by";
+        public readonly string updateDtCol = "update_dt";
+        public readonly string updateByCol = "update_by";
+
         public RoleProviderContext()
         {
             sqlConn.ConnectionString = ConfigurationManager.ConnectionStrings["RoleProviderContext"].ConnectionString;
@@ -120,14 +138,35 @@ namespace GuidRoleProvider
 
         public void SaveChanges()
         {
-            userAdapter.UpdateCommand = new SqlCommandBuilder(userAdapter).GetUpdateCommand();
-            userAdapter.Update(db, userTable);
+            // Update last update date
+            DataSet changes = db.GetChanges();
 
-            roleAdapter.UpdateCommand = new SqlCommandBuilder(roleAdapter).GetUpdateCommand();
-            roleAdapter.Update(db, roleTable);
+            if (changes != null)
+            {
+                foreach (DataRow row in changes.Tables[userTable].Rows)
+                {
+                    row[updateDtCol] = DateTime.Now;
+                    row[updateByCol] = HttpContext.Current.User.Identity.Name;
+                }
+                userAdapter.UpdateCommand = new SqlCommandBuilder(userAdapter).GetUpdateCommand();
+                userAdapter.Update(db, userTable);
 
-            userRoleAdapter.UpdateCommand = new SqlCommandBuilder(userRoleAdapter).GetUpdateCommand();
-            userRoleAdapter.Update(db, userRoleTable);
+                foreach (DataRow row in changes.Tables[roleTable].Rows)
+                {
+                    row[updateDtCol] = DateTime.Now;
+                    row[updateByCol] = HttpContext.Current.User.Identity.Name;
+                }
+                roleAdapter.UpdateCommand = new SqlCommandBuilder(roleAdapter).GetUpdateCommand();
+                roleAdapter.Update(db, roleTable);
+
+                foreach (DataRow row in changes.Tables[userRoleTable].Rows)
+                {
+                    row[updateDtCol] = DateTime.Now;
+                    row[updateByCol] = HttpContext.Current.User.Identity.Name;
+                }
+                userRoleAdapter.UpdateCommand = new SqlCommandBuilder(userRoleAdapter).GetUpdateCommand();
+                userRoleAdapter.Update(db, userRoleTable);
+            }
         }
 
         public void Dispose()
