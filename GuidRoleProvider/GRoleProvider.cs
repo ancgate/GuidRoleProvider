@@ -271,6 +271,8 @@ namespace GuidRoleProvider
         /// <returns></returns>
         private T ResolveUserRow<T>(string username, RoleProviderContext context, Func<RoleProviderContext, T> linq)
         {
+            string usernameDomainless = StripDomain(username);
+
             // First try with current db
             T result = linq(context);
             if (result != null)
@@ -286,7 +288,7 @@ namespace GuidRoleProvider
             using (ActiveDirectoryComm adConn = new ActiveDirectoryComm())
             {
                 UserCollection adUsers = adConn.GetAllUsersSimple();
-                var user = (ActiveDirectoryCommunicator.User)adUsers.SingleOrDefault(x => ("hai-mke\\" + x.LoginName).Equals(username, StringComparison.OrdinalIgnoreCase));
+                var user = (ActiveDirectoryCommunicator.User)adUsers.SingleOrDefault(x => x.LoginName.Equals(usernameDomainless, StringComparison.OrdinalIgnoreCase));
 
                 if (user != null)
                 {
@@ -307,7 +309,7 @@ namespace GuidRoleProvider
 
                     if (row != null)
                     {
-                        row[context.userNameCol] = username;
+                        row[context.userNameCol] = usernameDomainless;
                         row[context.userFNameCol] = firstName;
                         row[context.userLNameCol] = lastName;
                         row[context.userEmailCol] = user.Email;
@@ -318,7 +320,7 @@ namespace GuidRoleProvider
                         newRow[context.userGuidCol] = user.Guid.Value;
                         newRow[context.userFNameCol] = firstName;
                         newRow[context.userLNameCol] = lastName;
-                        newRow[context.userNameCol] = username;
+                        newRow[context.userNameCol] = usernameDomainless;
                         newRow[context.userEmailCol] = user.Email;
                         context.db.Tables[context.userTable].Rows.Add(newRow);
                     }
@@ -335,7 +337,19 @@ namespace GuidRoleProvider
 
             // Username is not permissioned
             return default(T);
+        }
 
+        private string StripDomain(string username)
+        {
+            int domainSep = username.IndexOf('\\');
+            if (domainSep < 0)
+            {
+                return username;
+            }
+            else
+            {
+                return username.Substring(domainSep + 1);
+            }
         }
     }
 }
