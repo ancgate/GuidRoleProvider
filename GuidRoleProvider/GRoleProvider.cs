@@ -73,7 +73,7 @@ namespace GuidRoleProvider
                     .Equals(roleName, StringComparison.OrdinalIgnoreCase)))
                 {
                     DataRow newRow = context.db.Tables[context.roleTable].NewRow();
-                    newRow[context.roleIdCol] = null; // null is for identity column (will be auto assigned)
+                    newRow[context.roleIdCol] = DBNull.Value; // null is for identity column (will be auto assigned)
                     newRow[context.roleNameCol] = roleName;
                     newRow[context.insertByCol] = HttpContext.Current.User.Identity.Name;
                     newRow[context.insertDtCol] = HttpContext.Current.User.Identity.Name;
