@@ -11,7 +11,7 @@ namespace GuidRoleProvider
 {
     /* Declare connection string with name "RoleProviderContext" and role provider as 
 
-    <roleManager enabled="true" cacheRolesInCookie="false" defaultProvider="GuidRoleProvider">
+    <roleManager enabled="true" cacheRolesInCookie="false" defaultProvider="GRoleProvider">
         <providers>
             <clear />
             <add name="GRoleProvider" type="GuidRoleProvider.GRoleProvider, GuidRoleProvider" connectionStringName="RoleProviderContext" />
